@@ -55,5 +55,57 @@ class ApiController extends Controller
             ],400);
        }
    }
+   public function getBusinessDays(Request $request)
+    {
+       try
+       {
+            $input=$request->all();
+            $validator = Validator::make($input, [
+            'start_date' => 'required|date_format:d-m-Y',
+            'end_date' => 'required|date_format:d-m-Y',
+            ]);
+
+            if($validator->fails())
+            {  
+                return response()->json([
+                    'status_code'=>422,
+                    'message' => 'Validation failed',
+                    'errors' =>$validator->errors()
+                ],422);
+            } 
+            $start=$input['start_date'];
+            $end=$input['end_date'];
+            $startyear=date('Y',strtotime($start));
+            $endyear=date('Y',strtotime($end));
+            $holidays=array();
+            for($i=$startyear;$i<=$endyear;$i++)
+            {
+                array_push($holidays,'01-01-'.$i,'26-01-'.$i,'02-04-'.$i,'01-05-'.$i,'15-08-'.$i,'25-12-'.$i);
+            }
+            $period = CarbonPeriod::create($start, $end);
+            foreach ($period as $date) {
+                $d=$date->format('d-m-Y');
+                if((!in_array($d,$holidays))&&(date('w', strtotime($d))!=6)&&(date('w', strtotime($d))!=0))
+                   {
+                        $days[]=$d;
+                }
+
+            }
+            $day=array('days'=>$days);
+            return response()->json([
+                    'status_code'=>200,
+                    'data' => $day]);
+
+            
+        }
+        catch(\Exception $exception)
+        {
+          return response()->json([
+                'status_code'=>400,
+                'message' => 'Exception Occured',
+                'errors'=> $exception->getMessage()
+            ],400);
+        }
+   }
    
 }
